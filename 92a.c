@@ -1,3 +1,4 @@
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,15 +26,17 @@ int main(int an, char **as)
 
     int it;
     init();
-    for (it = 1; it <= itmax; it++)
-    {
-        eps = 0.;
-        relax();
-        resid();
-        printf("it=%4i   eps=%f\n", it, eps);
-        if (eps < maxeps)
-            break;
-    }
+    
+        for (it = 1; it <= itmax; it++)
+        {
+            eps = 0.;
+            relax();
+            resid();
+            printf("it=%4i   eps=%f\n", it, eps);
+            if (eps < maxeps)
+                break;
+        }
+
     verify();
     clock_t end = clock();
 
