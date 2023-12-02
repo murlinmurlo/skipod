@@ -5,7 +5,7 @@
 #include <omp.h> 
 
 #define Max(a,b) ((a)>(b)?(a):(b))
-#define N (4*2*2*2*2*2*2+2)
+#define N (8*2*2*2*2*2*2+2)
 
 double maxeps = 0.1e-7;
 int itmax = 100;
@@ -20,40 +20,33 @@ void verify();
 
 int main(int an, char **as)
 {
+    omp_set_num_threads(4);
     double time_spent = 0.0;
     clock_t begin = clock();
 
     int it;
     init();
-    for (it = 1; it <= itmax; it++)
-    {
-        eps = 0.;
-        relax();
-        resid();
-        printf("it=%4i   eps=%f\n", it, eps);
-        if (eps < maxeps)
-            break;
-    }
+    
+    
+        for (it = 1; it <= itmax; it++)
+        {
+            eps = 0.;
+            relax();
+            resid();
+            printf("it=%4i   eps=%f\n", it, eps);
+            if (eps < maxeps)
+                break;
+        }
+    
     verify();
-
-    /*
-	for (int i = 0; i < N; i++) 
-	{ 
-		for (int j = 0; j < N; j++) 
-		{ 
-			printf("%f\t", A[i][j]); 
-		} 
-		printf("\n"); 
-    }*/
-
     clock_t end = clock();
 
     time_spent += (double)(end - begin) / CLOCKS_PER_SEC;
- 
-    printf("TIME %f seconds", time_spent);
 
+    printf("TIME %f", time_spent);
     return 0;
 }
+
 
 void init()
 { 
@@ -63,9 +56,10 @@ void init()
         {
             for(int i=0; i<=N-1; i++)
             {
-                for(int j=0; j<=N-1; j++)
+                #pragma omp task
+                
                 {
-                    #pragma omp task
+                    for(int j=0; j<=N-1; j++)
                     {
                         if(i==0 || i==N-1 || j==0 || j==N-1) 
                             A[i][j]= 0.;
@@ -95,9 +89,10 @@ void resid()
 	{
 		for(i=1; i<=N-2; i++)
 		{
-			for(j=1; j<=N-2; j++)
+            #pragma omp task
+			
 			{
-				#pragma omp task
+				for(j=1; j<=N-2; j++)
 				{
 					double e;
 					e = fabs(A[i][j] - B[i][j]);         
@@ -122,9 +117,11 @@ void verify()
         {
             for (i = 0; i <= N - 1; i++)
             {
-                for (j = 0; j <= N - 1; j++)
+                #pragma omp task
+                
                 {
-                    #pragma omp task
+                    for (j = 0; j <= N - 1; j++)
+                    
                     {
                         double temp = A[i][j] * (i + 1) * (j + 1) / (N * N);
                         #pragma omp atomic
