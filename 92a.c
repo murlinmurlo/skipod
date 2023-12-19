@@ -19,49 +19,47 @@ void resid();
 void init();
 void verify();
 
+int tred;
+
 int main(int an, char **as)
 {
-    double time_spent = 0.0;
-    clock_t begin = clock();
+    tred = strtoll(as[1], 0, 10);
+    double start = omp_get_wtime();
 
     int it;
     init();
-    
-        for (it = 1; it <= itmax; it++)
-        {
-            eps = 0.;
-            relax();
-            resid();
-            printf("it=%4i   eps=%f\n", it, eps);
-            if (eps < maxeps)
-                break;
-        }
-
+    for (it = 1; it <= itmax; it++)
+    {
+        eps = 0.;
+        relax();
+        resid();
+        printf("it=%4i   eps=%f\n", it, eps);
+        if (eps < maxeps)
+            break;
+    }
     verify();
     clock_t end = clock();
 
-    time_spent += (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("TIME %f", omp_get_wtime()-start);
 
-    printf("TIME %f", time_spent);
+    
     return 0;
 }
 
-void init()
-{
-#pragma omp parallel for collapse(2) private(i, j)
-    for (i = 0; i <= N - 1; i++)
-        for (j = 0; j <= N - 1; j++)
-        {
-            if  (i==0 || i==N-1 || j==0 || j==N-1) 
-                A[i][j]= 0.;
-		    else 
-                A[i][j]= ( 1. + i + j ) ;
-        }
-}
 
+void init()
+{ 
+	for(i=0; i<=N-1; i++)
+	for(j=0; j<=N-1; j++)
+	
+	{
+		if(i==0 || i==N-1 || j==0 || j==N-1) A[i][j]= 0.;
+		else A[i][j]= ( 1. + i + j ) ;
+	}
+}
 void relax()
 {
-#pragma omp parallel for collapse(2) private(i, j) 
+#pragma omp parallel for shared(B, A) private(i, j) num_threads(tred)
     for (i = 2; i <= N - 3; i++)
         for (j = 2; j <= N - 3; j++)
         {
@@ -71,7 +69,7 @@ void relax()
 
 void resid()
 {
-#pragma omp parallel for collapse(2) private(i, j) reduction(max : eps) 
+#pragma omp parallel for private(i, j) reduction(max : eps) num_threads(tred)
     for (i = 1; i <= N - 2; i++)
         for (j = 1; j <= N - 2; j++)
         {
@@ -84,17 +82,14 @@ void resid()
 
 void verify()
 {
-    double s;
-    s = 0.0;
-    #pragma omp parallel for collapse(2) private(i, j) reduction(+:s)
-    for(i = 0; i <= N-1; i++)
-    {
-        for(j = 0; j <= N-1; j++)
-        {
-            s = s + A[i][j] * (i + 1) * (j + 1) / (N * N);
-        }
-    }
-    
-    printf("  S = %f\n", s);
+	double s;
+	s=0.;
+	for(i=0; i<=N-1; i++)
+	for(j=0; j<=N-1; j++)
+	
+	{
+		s=s+A[i][j]*(i+1)*(j+1)/(N*N);
+	}
+	printf("  S = %f\n",s);
 }
 
